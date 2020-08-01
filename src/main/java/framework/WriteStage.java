@@ -1,32 +1,40 @@
+package framework;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.concurrent.*;
 
-public class ReadStage implements StageAPI {
+public class WriteStage implements StageAPI {
     public final Integer ThreadSize = 5;
     public final Integer BatchSize = 1;
+    private final String header = "HTTP/1.1 200 OK\n"+
+            "Content-Type: text/html;charset=UTF-8\n"+
+            "framework.Server: SEDA Web framework.Server/1.1\n\n";
+    private final String template = "<!DOCTYPE html>"+
+            "<html><head>"+
+            "<title>Welcome to SEDA Web framework.Server (WWS)</title>"+
+            "</head><body>%s</body></html>";
+
     public ThreadPoolExecutor pool = new ThreadPoolExecutor(1,ThreadSize,50,TimeUnit.MILLISECONDS,new ArrayBlockingQueue<Runnable>(2* ThreadSize));
 
     public final String lock = "nomeaning";
     public LinkedBlockingQueue<Event>  BatchingQ = new LinkedBlockingQueue<Event>(2 * BatchSize);
-    public ReadStage(){
-        StageMap.getInstance().stageMap.put("read",this);
+    public WriteStage(){
+        StageMap.getInstance().stageMap.put("write",this);
     }
     @Override
     public void Enqueue(Event e){
         synchronized (lock){
             Runnable task;
-            BatchingQ.offer(e);
+            BatchingQ.add(e);
             if(BatchingQ.size() == BatchSize){
-                ArrayList<Event> elist = new ArrayList<>();
+                System.out.println("New Writer");
+                ArrayList<Event> elist = new ArrayList<>(BatchSize);
                 try {
-                    for (int i = 0; i < BatchSize; i++) {
-                        elist.add(i,BatchingQ.poll());
-                    }
+                for (int i = 0; i < BatchSize; i++) {
+                    elist.add(i,BatchingQ.poll());
+                }
                 }catch(Exception ex){
                     //do nothing
                 }
@@ -46,10 +54,15 @@ public class ReadStage implements StageAPI {
                 Event e;
                 for (int i = 0; i < BatchSize; i++) {
                     e = elist.get(i);
-                    if(e.type == Event.Type.Read){
-                        System.out.println("Async " + e.Packet);
-                        Event event = new Event(e.key, Event.Type.ReadRepsonse);
-                        event.Packet = e.Packet;
+                    if(e.type == Event.Type.Write){
+                        System.out.println("Write " + String.format(template,e.Packet));
+                        ByteBuffer sendBuffer = ByteBuffer.allocate(1024);
+                        SocketChannel channel = (SocketChannel) e.key.channel();
+                        sendBuffer.clear();
+                        sendBuffer.put((header+String.format(template,e.Packet)).getBytes());
+                        sendBuffer.flip();
+                        channel.write(sendBuffer);
+                        Event event = new Event(e.key, Event.Type.WriteResponse);
                         StageMap.getInstance().stageMap.get("app").Enqueue(event);
                     }
                 }

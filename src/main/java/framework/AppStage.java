@@ -1,13 +1,13 @@
+package framework;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.concurrent.*;
 
 public class AppStage implements StageAPI {
     public final Integer ThreadSize = 5;
     public final Integer BatchSize = 1;
     public ThreadPoolExecutor pool = new ThreadPoolExecutor(1,ThreadSize,50,TimeUnit.MILLISECONDS,new ArrayBlockingQueue<Runnable>(2* ThreadSize));
-
     public final String lock = "nomeaning";
     public LinkedBlockingQueue<Event>  BatchingQ = new LinkedBlockingQueue<Event>(2 * BatchSize);
     public AppStage(){
@@ -46,8 +46,10 @@ public class AppStage implements StageAPI {
                     e = elist.get(i);
                     if (e.type == Event.Type.ReadRepsonse) {
                         System.out.println("APP Read " + e.Packet);
+                        HashMap<String,String >params = RestfulParser.parse(e.Packet);
                         Event event = new Event(e.key, Event.Type.Write);
-                        event.Packet = e.Packet;
+                        event.Packet = Dispatcher.dispatch(e.httpType,params);
+                        //event.Packet = params.toString();
                         StageMap.getInstance().stageMap.get("write").Enqueue(event);
                     }
                     else if(e.type == Event.Type.WriteResponse){

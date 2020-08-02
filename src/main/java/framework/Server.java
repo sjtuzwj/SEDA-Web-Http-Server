@@ -54,7 +54,7 @@ public class Server {
                 if (!key.isValid()) {
                     continue;
                 }
-               else if (key.isReadable()) {
+               if (key.isReadable()) {
                     SocketChannel socketChannel = (SocketChannel) key.channel();
                     // Clear out our read buffer so it's ready for new data
                     ByteBuffer readBuffer = ByteBuffer.allocate(1024);
@@ -76,9 +76,13 @@ public class Server {
                     String str = new String(readBuffer.array(), 0, numRead);
                     Event event = new Event(key, Event.Type.Read);
                     event.Packet = str;
-                    System.out.println("Sync "+str);
                     StageMap.getInstance().stageMap.get("read").Enqueue(event);
                 }
+               if(key.isWritable()){
+                   key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
+                   Event event = new Event(key, Event.Type.Flush);
+                   StageMap.getInstance().stageMap.get("flush").Enqueue(event);
+               }
                 keyIterator.remove(); //该事件已经处理，可以丢弃
             }
         }
@@ -96,7 +100,8 @@ public class Server {
         ServerSocketChannel ssc = (ServerSocketChannel) key.channel();
         SocketChannel clientChannel = ssc.accept();
         clientChannel.configureBlocking(false);
-        clientChannel.register(subSelector, SelectionKey.OP_READ);
+        SelectionKey newkey = clientChannel.register(subSelector, SelectionKey.OP_READ);
+        newkey.attach(ByteBuffer.allocate(1024));
         System.out.println("a new client connected "+clientChannel.getRemoteAddress());
     }
 
@@ -104,6 +109,7 @@ public class Server {
         SocketChannel clientChannel = (SocketChannel) key.channel();
         SocketAddress addr  = clientChannel.getRemoteAddress();
         clientChannel.close();
+        key.cancel();
         System.out.println("a client closed "+addr);
     }
 
@@ -124,6 +130,7 @@ public class Server {
         new AppStage();
         new WriteStage();
         new ReadStage();
+        new FlushStage();
         new Server().start();
     }
 }

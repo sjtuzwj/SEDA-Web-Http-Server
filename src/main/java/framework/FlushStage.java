@@ -6,23 +6,16 @@ import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.concurrent.*;
 
-public class WriteStage implements StageAPI {
+public class FlushStage implements StageAPI {
     public final Integer ThreadSize = 5;
     public final Integer BatchSize = 1;
-    private final String header = "HTTP/1.1 200 OK\n"+
-            "Content-Type: text/html;charset=UTF-8\n"+
-            "framework.Server: SEDA Web framework.Server/1.1\n\n";
-    private final String template = "<!DOCTYPE html>"+
-            "<html><head>"+
-            "<title>Welcome to SEDA Web framework.Server (WWS)</title>"+
-            "</head><body>%s</body></html>";
 
     public ThreadPoolExecutor pool = new ThreadPoolExecutor(1,ThreadSize,50,TimeUnit.MILLISECONDS,new ArrayBlockingQueue<Runnable>(2* ThreadSize));
 
     public final String lock = "nomeaning";
     public LinkedBlockingQueue<Event>  BatchingQ = new LinkedBlockingQueue<Event>(2 * BatchSize);
-    public WriteStage(){
-        StageMap.getInstance().stageMap.put("write",this);
+    public FlushStage(){
+        StageMap.getInstance().stageMap.put("flush",this);
     }
     @Override
     public void Enqueue(Event e){
@@ -30,12 +23,12 @@ public class WriteStage implements StageAPI {
             Runnable task;
             BatchingQ.add(e);
             if(BatchingQ.size() == BatchSize){
-                System.out.println("New Writer");
+                System.out.println("New Flusher");
                 ArrayList<Event> elist = new ArrayList<>(BatchSize);
                 try {
-                for (int i = 0; i < BatchSize; i++) {
-                    elist.add(i,BatchingQ.poll());
-                }
+                    for (int i = 0; i < BatchSize; i++) {
+                        elist.add(i,BatchingQ.poll());
+                    }
                 }catch(Exception ex){
                     //do nothing
                 }
@@ -55,14 +48,13 @@ public class WriteStage implements StageAPI {
                 Event e;
                 for (int i = 0; i < BatchSize; i++) {
                     e = elist.get(i);
-                    if(e.type == Event.Type.Write){
-                        System.out.println("Write " + String.format(template,e.Packet));
+                    if(e.type == Event.Type.Flush){
                         ByteBuffer sendBuffer = (ByteBuffer) e.key.attachment();
                         SocketChannel channel = (SocketChannel)e.key.channel();
-                        sendBuffer.put((header+String.format(template,e.Packet)).getBytes());
-                        e.key.interestOps(e.key.interestOps() | SelectionKey.OP_WRITE);
-                        Event event = new Event(e.key, Event.Type.WriteResponse);
-                        StageMap.getInstance().stageMap.get("app").Enqueue(event);
+                        sendBuffer.flip();
+                        if(sendBuffer.hasRemaining())
+                            channel.write(sendBuffer);
+                        sendBuffer.clear();
                     }
                 }
             }catch(Exception e){

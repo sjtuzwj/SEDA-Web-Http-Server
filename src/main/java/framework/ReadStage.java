@@ -1,5 +1,9 @@
 package framework;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.concurrent.*;
 
@@ -58,9 +62,30 @@ public class ReadStage implements StageAPI {
                 for (int i = 0; i < BatchSize; i++) {
                     e = elist.get(i);
                     if(e.type == Event.Type.Read){
-                        System.out.println("Async " + e.Packet);
+                        SocketChannel socketChannel = (SocketChannel) e.key.channel();
+                        // Clear out our read buffer so it's ready for new data
+                        ByteBuffer readBuffer = ByteBuffer.allocate(1024);
+                        // Attempt to read off the channel
+                        int numRead;
+                        try {
+                            numRead = socketChannel.read(readBuffer);
+                        } catch (IOException ex) {
+                            // The remote forcibly closed the connection, cancel
+                            // the selection key and close the channel.
+                            e.key.cancel();
+                            socketChannel.close();
+                            return;
+                        }
+                        if(numRead == -1){
+                            e.key.cancel();
+                            socketChannel.close();
+                            return;
+                        }
+                        e.key.interestOps(e.key.interestOps() | SelectionKey.OP_READ);
+                        String str = new String(readBuffer.array(), 0, numRead);
+                        System.out.println("Async " + str);
                         Event event = new Event(e.key, Event.Type.ReadRepsonse);
-                        String lines[] = e.Packet.split("\\r?\\n");
+                        String lines[] = str.split("\\r?\\n");
                         String param[] = lines[0].split(" ");
                         event.httpType = parseHttpType(param[0]);
                         event.Packet = param[1];

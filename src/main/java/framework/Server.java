@@ -55,27 +55,8 @@ public class Server {
                     continue;
                 }
                if (key.isReadable()) {
-                    SocketChannel socketChannel = (SocketChannel) key.channel();
-                    // Clear out our read buffer so it's ready for new data
-                    ByteBuffer readBuffer = ByteBuffer.allocate(1024);
-                    // Attempt to read off the channel
-                    int numRead;
-                    try {
-                        numRead = socketChannel.read(readBuffer);
-                    } catch (IOException ex) {
-                        // The remote forcibly closed the connection, cancel
-                        // the selection key and close the channel.
-                        key.cancel();
-                        socketChannel.close();
-                        return;
-                    }
-                    if(numRead == -1){
-                        close(key);
-                        continue;
-                    }
-                    String str = new String(readBuffer.array(), 0, numRead);
+                    key.interestOps(key.interestOps() & ~SelectionKey.OP_READ);
                     Event event = new Event(key, Event.Type.Read);
-                    event.Packet = str;
                     StageMap.getInstance().stageMap.get("read").Enqueue(event);
                 }
                if(key.isWritable()){
@@ -105,13 +86,6 @@ public class Server {
         System.out.println("a new client connected "+clientChannel.getRemoteAddress());
     }
 
-    private void close(SelectionKey key) throws IOException {
-        SocketChannel clientChannel = (SocketChannel) key.channel();
-        SocketAddress addr  = clientChannel.getRemoteAddress();
-        clientChannel.close();
-        key.cancel();
-        System.out.println("a client closed "+addr);
-    }
 
     class subReactor implements Runnable {
         @Override

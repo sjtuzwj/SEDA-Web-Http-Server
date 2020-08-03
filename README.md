@@ -20,15 +20,16 @@ Now, my implementation simplify the controller of thread and batch, so that the 
 Main/Sub Reactor and NIO(IO multiplexing) is the IO model, which means getting request is synchronous but handling request is asynchronous and pipelined.   
 Main Reactor use one selector for Accept, Sub Reactor use another for IO. To register the socket to Sub Reactor, timeout is necessary to avoid blocking.   
 目前我的实现简化了论文中关于线程和批处理的控制器，单纯使用定值。  
-IO模型是**主从Reactor**+多路复用，接收请求的数据是同步的，而处理请求并发送响应则是异步且流水线化的。  
+IO模型是**主从Reactor**+多路复用，所有IO操作以及业务逻辑均为异步且流水线化     
 使用两个Selector分别负责accept和io，为了避免main注册sub时sub被select阻塞，因此设定timeout为100ms。  
 ### EventLoop
 - Acceptable: 获取channel并注册在sub Reactor上
-- Readable: 获取数据并发送事件给Read stage，如果长度-1则进行close，close channel且cancel key
-- Writable: 停止监听Writable并发送事件给Flush Stage
+- Readable: 停止监听Readable并发送事件给Read stage异步处理
+- Writable: 停止监听Writable并发送事件给Flush Stage异步处理
 - Connectable: not supported
 ### Read Stage
-读取请求并读取header的第一行，获取请求类型、url，转发给AppStage
+获取数据并恢复监听Readable事件，如果长度-1则进行close，close channel且cancel key   
+读取请求并读取header的第一行，获取请求类型、url，转发给AppStage   
 ### App Stage
 对于url进行parse，然后根据路径、请求类型到dispatcher中寻找对应的函数入口，并使用参数进行调用，并将调用结果通过事件转发给WriteStage  
 如果参数不足,则返回Parameter not Found

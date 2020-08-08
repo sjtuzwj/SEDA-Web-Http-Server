@@ -82,7 +82,7 @@ public class Server {
         SocketChannel clientChannel = ssc.accept();
         clientChannel.configureBlocking(false);
         SelectionKey newkey = clientChannel.register(subSelector, SelectionKey.OP_READ);
-        newkey.attach(ByteBuffer.allocate(1024));
+        newkey.attach(new ReadWriteBuffer());
         System.out.println("a new client connected "+clientChannel.getRemoteAddress());
     }
 
@@ -105,6 +105,8 @@ public class Server {
         new WriteStage();
         new ReadStage();
         new FlushStage();
+        new DecodeStage();
+        new EncodeStage();
         new Server().start();
     }
 }

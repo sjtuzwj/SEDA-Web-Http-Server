@@ -4,34 +4,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.*;
 
-public class AppStage implements StageAPI {
-    public final Integer ThreadSize = 5;
-    public final Integer BatchSize = 1;
-    public ThreadPoolExecutor pool = new ThreadPoolExecutor(1,ThreadSize,50,TimeUnit.MILLISECONDS,new ArrayBlockingQueue<Runnable>(2* ThreadSize));
-    public final String lock = "nomeaning";
-    public LinkedBlockingQueue<Event>  BatchingQ = new LinkedBlockingQueue<Event>(2 * BatchSize);
+public class AppStage extends AbstractStage {
     public AppStage(){
         StageMap.getInstance().stageMap.put("app",this);
     }
     @Override
-    public void Enqueue(Event e){
-        synchronized (lock){
-            Runnable task;
-            BatchingQ.add(e);
-            if(BatchingQ.size() == BatchSize){
-                System.out.println("New App");
-                ArrayList<Event> elist = new ArrayList<>(BatchSize);
-                try {
-                    for (int i = 0; i < BatchSize; i++) {
-                        elist.add(i,BatchingQ.poll());
-                    }
-                }catch(Exception ex){
-                    //do nothing
-                }
-                task = new HandleThread(elist);
-                pool.execute(task);
-            }
-        }
+    public void doJob(ArrayList<Event> elist){
+        Runnable task = new HandleThread(elist);
+        pool.execute(task);
     }
     class HandleThread implements Runnable{
         ArrayList<Event> elist;
@@ -47,10 +27,10 @@ public class AppStage implements StageAPI {
                     if (e.type == Event.Type.ReadRepsonse) {
                         System.out.println("APP Read " + e.Packet);
                         HashMap<String,String >params = RestfulParser.parse(e.Packet);
-                        Event event = new Event(e.key, Event.Type.Write);
+                        Event event = new Event(e.key, Event.Type.Encode);
                         event.Packet = Dispatcher.dispatch(e.httpType,params);
                         //event.Packet = params.toString();
-                        StageMap.getInstance().stageMap.get("write").Enqueue(event);
+                        StageMap.getInstance().stageMap.get("encode").Enqueue(event);
                     }
                     else if(e.type == Event.Type.WriteResponse){
                         System.out.println("Write Done");

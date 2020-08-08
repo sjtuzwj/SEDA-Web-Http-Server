@@ -23,18 +23,21 @@ Main Reactor use one selector for Accept, Sub Reactor use another for IO. To reg
 IO模型是**主从Reactor**+多路复用，所有IO操作以及业务逻辑均为异步且流水线化     
 使用两个Selector分别负责accept和io，为了避免main注册sub时sub被select阻塞，因此设定timeout为100ms。  
 ### EventLoop
-- Acceptable: 获取channel并注册在sub Reactor上
+- Acceptable: 获取channel并注册在sub Reactor上,绑定buffer
 - Readable: 停止监听Readable并发送事件给Read stage异步处理
 - Writable: 停止监听Writable并发送事件给Flush Stage异步处理
 - Connectable: not supported
 ### Read Stage
 获取数据并恢复监听Readable事件，如果长度-1则进行close，close channel且cancel key   
+### Dncode Stage
 读取请求并读取header的第一行，获取请求类型、url，转发给AppStage   
 ### App Stage
-对于url进行parse，然后根据路径、请求类型到dispatcher中寻找对应的函数入口，并使用参数进行调用，并将调用结果通过事件转发给WriteStage  
+对于url进行parse，然后根据路径、请求类型到dispatcher中寻找对应的函数入口，并使用参数进行调用，并将调用结果通过事件转发给EncodeStage  
 如果参数不足,则返回Parameter not Found
+### Encode Stage
+增加响应头，填充响应,将响应结果转发给WriteStage  
 ### Write Stage
-增加响应头，填充响应体,将响应写入socket缓冲区，并监听writable事件
+将响应写入socket缓冲区，并监听writable事件
 ### Flush Stage
 刷新socket缓冲区
 

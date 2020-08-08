@@ -28,8 +28,8 @@ IO模型是**主从Reactor**+多路复用，所有IO操作以及业务逻辑均�
 - Writable: 停止监听Writable并发送事件给Flush Stage异步处理
 - Connectable: not supported
 ### Read Stage
-获取数据并恢复监听Readable事件，如果长度-1则进行close，close channel且cancel key   
-### Dncode Stage
+获取数据并恢复监听Readable事件，如果长度-1则进行close，close channel且cancel key,转发给Decode Stage   
+### Decode Stage
 读取请求并读取header的第一行，获取请求类型、url，转发给AppStage   
 ### App Stage
 对于url进行parse，然后根据路径、请求类型到dispatcher中寻找对应的函数入口，并使用参数进行调用，并将调用结果通过事件转发给EncodeStage  
@@ -37,7 +37,7 @@ IO模型是**主从Reactor**+多路复用，所有IO操作以及业务逻辑均�
 ### Encode Stage
 增加响应头，填充响应,将响应结果转发给WriteStage  
 ### Write Stage
-将响应写入socket缓冲区，并监听writable事件
+将响应写入socket缓冲区，并监听writable事件,通知App Stage写入完成
 ### Flush Stage
 刷新socket缓冲区
 
@@ -59,6 +59,7 @@ Now It only support Pow and Add，by visit /pow?base={base}&index={index} and /a
 - 0.0 TCP server with staged event driven architecture and single Reactor
 - 0.1 Http server with basic Restful support, main/sub Reactor
 - 0.2 Add Flush Stage with async NIO write support
+- 0.3 Read->Decode->App->Encode->Write->Flush
 
 ## Issue问题
 问题在于，假如我上次的事件还没有处理完成，因为NIO默认水平触发，那这个key还是活跃的。那会不会让channel重复消费这个key呢?    

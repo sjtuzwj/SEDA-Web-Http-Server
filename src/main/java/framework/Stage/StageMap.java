@@ -1,4 +1,4 @@
-package framework;
+package framework.Stage;
 
 import java.util.HashMap;
 

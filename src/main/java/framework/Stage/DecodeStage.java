@@ -1,11 +1,9 @@
-package framework;
+package framework.Stage;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
+import framework.Util.Event;
+import framework.Util.HttpUtil.RequestType;
+
 import java.util.ArrayList;
-import java.util.concurrent.*;
 
 public class DecodeStage  extends AbstractStage {
     public DecodeStage(){
@@ -16,18 +14,18 @@ public class DecodeStage  extends AbstractStage {
         Runnable task = new HandleThread(elist);
         pool.execute(task);
     }
-    private HttpType parseHttpType(String type){
+    private RequestType parseHttpType(String type){
         switch (type) {
-            case "GET": return HttpType.GET;
-            case "POST": return HttpType.POST;
-            case "PUT": return HttpType.PUT;
-            case "DELETE": return HttpType.DELETE;
-            case "CONNECT": return HttpType.CONNECT;
-            case "OPTIONS": return HttpType.OPTIONS;
-            case "HEAD": return HttpType.HEAD;
-            case "TRACE": return HttpType.TRACE;
+            case "GET": return RequestType.GET;
+            case "POST": return RequestType.POST;
+            case "PUT": return RequestType.PUT;
+            case "DELETE": return RequestType.DELETE;
+            case "CONNECT": return RequestType.CONNECT;
+            case "OPTIONS": return RequestType.OPTIONS;
+            case "HEAD": return RequestType.HEAD;
+            case "TRACE": return RequestType.TRACE;
         }
-        return HttpType.ERROR;
+        return RequestType.ERROR;
     }
 
     class HandleThread implements Runnable{
@@ -46,7 +44,7 @@ public class DecodeStage  extends AbstractStage {
                         Event event = new Event(e.key, Event.Type.ReadRepsonse);
                         String lines[] = str.split("\\r?\\n");
                         String param[] = lines[0].split(" ");
-                        event.httpType = parseHttpType(param[0]);
+                        event.requestType = parseHttpType(param[0]);
                         event.Packet = param[1];
                         StageMap.getInstance().stageMap.get("app").Enqueue(event);
                     }

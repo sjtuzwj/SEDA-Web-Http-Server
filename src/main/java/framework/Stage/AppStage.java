@@ -1,8 +1,12 @@
-package framework;
+package framework.Stage;
+
+import framework.Util.HttpUtil.Dispatcher;
+import framework.Util.Event;
+import framework.Util.HttpUtil.Response;
+import framework.Util.HttpUtil.RestfulParser;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.concurrent.*;
 
 public class AppStage extends AbstractStage {
     public AppStage(){
@@ -27,9 +31,11 @@ public class AppStage extends AbstractStage {
                     if (e.type == Event.Type.ReadRepsonse) {
                         System.out.println("APP Read " + e.Packet);
                         HashMap<String,String >params = RestfulParser.parse(e.Packet);
+                        System.out.println(params.toString());
                         Event event = new Event(e.key, Event.Type.Encode);
-                        event.Packet = Dispatcher.dispatch(e.httpType,params);
-                        //event.Packet = params.toString();
+                        Response response = Dispatcher.dispatch(e.requestType,params);
+                        event.responseType = response.responseType;
+                        event.Packet = response.content;
                         StageMap.getInstance().stageMap.get("encode").Enqueue(event);
                     }
                     else if(e.type == Event.Type.WriteResponse){

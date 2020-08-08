@@ -1,6 +1,6 @@
 package controller;
 
-import framework.HttpType;
+import com.alibaba.fastjson.JSON;
 
 public class PowController {
     private PowController() {
@@ -15,6 +15,6 @@ public class PowController {
     public String Pow(String base,String index){
         if(base ==null||index==null)
             throw new NullPointerException();
-        return String.valueOf(Math.pow(Double.parseDouble(base),Double.parseDouble(index)));
+        return JSON.toJSONString(String.valueOf(Math.pow(Double.parseDouble(base),Double.parseDouble(index))));
     }
 }

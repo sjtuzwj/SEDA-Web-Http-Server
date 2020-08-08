@@ -1,6 +1,6 @@
 package controller;
 
-import framework.HttpType;
+import com.alibaba.fastjson.JSON;
 
 public class AddController {
     private AddController() {
@@ -13,6 +13,6 @@ public class AddController {
     public String Add(String left,String right){
         if(left==null||right==null)
             throw new NullPointerException();
-        return String.valueOf(Double.parseDouble(left)+Double.parseDouble(right));
+        return JSON.toJSONString(String.valueOf(Double.parseDouble(left)+Double.parseDouble(right)));
     }
 }

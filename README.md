@@ -1,7 +1,7 @@
-# SEDA Web framework.Server
+# SEDA Web Server
 **Maintainer: Zhu Wenjie**
 ## 定义Definition
-**SEDA**(Staged framework.Event Driven Architecture) is an asynchronous and pipelined server model.  
+**SEDA**(Staged framework.Util.Event Driven Architecture) is an asynchronous and pipelined server model.  
 Each Stage is composed of an event queue and a thread pool.  
 A thread will handle a batch of events, and produce new events.  
 SEDA is now applied in Cassandra.   
@@ -36,6 +36,7 @@ IO模型是**主从Reactor**+多路复用，所有IO操作以及业务逻辑均�
 如果参数不足,则返回Parameter not Found
 ### Encode Stage
 增加响应头，填充响应,将响应结果转发给WriteStage  
+响应类型分为JSON和HTML两种
 ### Write Stage
 将响应写入socket缓冲区，并监听writable事件,通知App Stage写入完成
 ### Flush Stage

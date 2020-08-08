@@ -1,20 +1,17 @@
-package framework;
+package framework.Stage;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
+import framework.Util.Event;
+import framework.Util.HttpUtil.ResponseType;
+
 import java.util.ArrayList;
-import java.util.concurrent.*;
 
 public class EncodeStage  extends AbstractStage {
-    private final String header = "HTTP/1.1 200 OK\n"+
+    private final String htmlHeader = "HTTP/1.1 200 OK\n"+
             "Content-Type: text/html;charset=UTF-8\n"+
-            "framework.Server: SEDA Web framework.Server/1.1\n\n";
-    private final String template = "<!DOCTYPE html>"+
-            "<html><head>"+
-            "<title>Welcome to SEDA Web framework.Server (WWS)</title>"+
-            "</head><body>%s</body></html>";
+            "Server: SEDA Web Server\n\n";
+    private final String jsonHeader = "HTTP/1.1 200 OK\n"+
+            "Content-Type: text/json;charset=UTF-8\n"+
+            "Server: SEDA Web Server\n\n";
     public EncodeStage(){
         StageMap.getInstance().stageMap.put("encode",this);
     }
@@ -36,9 +33,12 @@ public class EncodeStage  extends AbstractStage {
                 for (int i = 0; i < BatchSize; i++) {
                     e = elist.get(i);
                     if(e.type == Event.Type.Encode) {
-                        Event event = new Event(e.key, Event.Type.Write);
-                        event.Packet = header+String.format(template,e.Packet);
-                        StageMap.getInstance().stageMap.get("write").Enqueue(event);
+                        e.type = Event.Type.Write;
+                        if(e.responseType == ResponseType.HTML)
+                        e.Packet = htmlHeader+e.Packet;
+                        if(e.responseType == ResponseType.JSON)
+                            e.Packet = jsonHeader+e.Packet;
+                        StageMap.getInstance().stageMap.get("write").Enqueue(e);
                     }
                 }
             }catch(Exception e){

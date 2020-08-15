@@ -20,15 +20,13 @@ public class Dispatcher {
                 return new Response(JSON,PowController.getInstance().Pow(params.get("base"),params.get("index")));
             case "/add":
                 return new Response(JSON,AddController.getInstance().Add(params.get("left"),params.get("right")));
-            case "/":
-                return new Response(JSON,"{homepage:1}");
             default:
-                return new Response(HTML, StaticPage.getInstance().get("404"));
+                return new Response(HTML, StaticPage.getInstance().get("404.html"));
         } }catch (NullPointerException e){
                 System.out.println("Here");
-                return new Response(HTML, StaticPage.getInstance().get("400"));
+                return new Response(HTML, StaticPage.getInstance().get("400.html"));
             }
         else
-            return new Response(HTML, StaticPage.getInstance().get("405"));
+            return new Response(HTML, StaticPage.getInstance().get("405.html"));
     }
 }

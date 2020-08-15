@@ -62,11 +62,6 @@ Now It only support Pow and Add，by visit /pow?base={base}&index={index} and /a
 - 0.2 Add Flush Stage with async NIO write support
 - 0.3 Read->Decode->App->Encode->Write->Flush
 
-## Issue问题
-问题在于，假如我上次的事件还没有处理完成，因为NIO默认水平触发，那这个key还是活跃的。那会不会让channel重复消费这个key呢?    
-举个例子，我0ms监听到key事件，每100ms监听一次，而处理需要1s，1s之内这个key都是活跃的，那样的话难道要read 10次么。   
-目前我使用同步读取来暂时规避这个问题，可能使用边缘触发能够防止这种情况?   
-
 ## 参考Reference
 [System|网络|分阶段事件驱动架构SEDA](https://zhuanlan.zhihu.com/p/161902784 )   
 [SEDA: an architecture for well-conditioned, scalable internet services](https://dl.acm.org/doi/abs/10.1145/502034.502057)

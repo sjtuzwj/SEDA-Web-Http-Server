@@ -4,8 +4,12 @@ import framework.Stage.StageAPI;
 import framework.Stage.StageMap;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Scanner;
+import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 
 public class StaticPage {
         public HashMap<String, String> pageMap = new HashMap<>();
@@ -26,32 +30,25 @@ public class StaticPage {
                     pageMap.put(name,res);
                     return res;
                 }
-                else return pageMap.get("404");
+                else return get("404.html");
 
             }
         }
 
 
     private String getFile(String fileName) {
+        try {
+            fileName = this.getClass().getClassLoader().getResource(fileName).getFile();
+            System.out.println(fileName);
+            final Path path = Paths.get(fileName);
+            String contents = new String(Files.readAllBytes(path));
+            System.out.println("C:" +contents);
+            AbstractQueuedSynchronizer
 
-        StringBuilder result = new StringBuilder("");
-        ClassLoader classLoader = getClass().getClassLoader();
-        File file = new File(classLoader.getResource(fileName).getFile());
-
-        try (Scanner scanner = new Scanner(file)) {
-
-            while (scanner.hasNextLine()) {
-                String line = scanner.nextLine();
-                result.append(line).append("\n");
-            }
-
-            scanner.close();
-
+            return contents;
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        return result.toString();
-
+        return "";
     }
 }

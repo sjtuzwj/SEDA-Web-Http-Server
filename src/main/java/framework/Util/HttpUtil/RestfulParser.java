@@ -7,7 +7,7 @@ public class RestfulParser {
         HashMap<String,String> arg= new HashMap<>();
         String params[] = url.split("\\?");
         arg.put("path",params[0]);
-        if(params.length>0){
+        if(params.length>1){
             params = params[1].split("&");
             for(int i = 0; i< params.length; i++){
                 String kv[] = params[i].split("=");
